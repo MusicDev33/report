@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "@types/node": "^24.2.0",
+    "jsdom": "^26.1.0",
+    "turndown": "^7.2.0"
+  },
+  "scripts": {
+    "start": "ts-node src/index.ts"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "@types/turndown": "^5.0.5"
+  }
+}
