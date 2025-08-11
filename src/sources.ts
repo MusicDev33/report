@@ -58,6 +58,20 @@ const dsSemiEng: DataSource = {
   }
 }
 
+const dsSemiAnalysis: DataSource = {
+  baseUrl: 'https://semianalysis.com/',
+  postCheck: () => {
+    // Placeholder: implement logic to check for new analysis posts
+    return '';
+  },
+  htmlToMarkdown: (html: string) => {
+    return ''
+  },
+  createUrl: (suffix: string) => {
+    return `https://semianalysis.com/${suffix}`;
+  }
+}
+
 export const Sources: Record<string, DataSource> = {
 
 }
