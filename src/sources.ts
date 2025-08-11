@@ -72,7 +72,9 @@ const dsSemiAnalysis: DataSource = {
   }
 }
 
-export const Sources: Record<string, DataSource> = {
+type SourceName = 'semiengineering' | 'semianalysis';
+
+export const Sources: Record<SourceName, DataSource> = {
   'semiengineering': dsSemiEng,
   'semianalysis': dsSemiAnalysis,
 }
