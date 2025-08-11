@@ -4,7 +4,25 @@ import https from 'https';
 import { promises as fs } from 'fs';
 import path from 'path';
 
+import Anth from '@anthropic-ai/sdk';
+
+import { countTokens } from '@anthropic-ai/tokenizer';
+
+import dotenv from 'dotenv';
+dotenv.config();
+
+const claude = new Anth({
+  apiKey: process.env.ANTH_KEY
+});
+
+console.log(process.env);
+
 const BASE_WIR = 'https://semiengineering.com/chip-industry-week-in-review-';
+
+// Might add DeepSeek and ChatGPT later. Depends on how cheap Claude batch processing ends up being
+const MODELS = {
+  claude: 'claude-sonnet-4-20250514'
+}
 
 // Probably overengineering for now, but I plan on expanding this pretty soon
 const generateUrl = (base: string, suffix: string) => {
@@ -30,7 +48,6 @@ const fetchHtml = (url: string): Promise<string> => {
 const fetchAndConvertToMarkdown = async (url: string, selector: string): Promise<string> => {
   const html = await fetchHtml(url);
 
-  // Parse the HTML and extract the target div
   const dom = new JSDOM(html);
   const document = dom.window.document;
   const targetDiv = document.querySelector(selector);
@@ -78,24 +95,54 @@ async function saveMarkdownToFile(markdown: string, filename: string) {
   const filePath = path.join(articlesDir, filename);
   await fs.writeFile(filePath, markdown, 'utf8');
   console.log(`Markdown saved to ${filePath}`);
+  console.log(`  - Tokens: ${countTokens(markdown)}`);
 }
 
-const selector = '.post_cnt';
+const sendToClaude = async (txt: string) => {
+  const msg = await claude.messages.create({
+    model: MODELS['claude'],
+    max_tokens: 5000,
+    temperature: 0.7,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: `I'm a trader with a focus on geopolitics and global supply chains. Give me an investment report (make the report in Markdown please) based on this article:\n${txt}`
+          }
+        ]
+      }
+    ]
+  });
 
-const articles: number[] = [];
-for (let i = 95; i <= 97; i++) {
-  articles.push(i)
+  return msg;
 }
 
-for (let article of articles) {
-  const articleStr = article.toString();
-  const url = generateUrl(BASE_WIR, `-${articleStr}/`);
+const main = async () => {
+  const selector = '.post_cnt';
 
-  fetchAndConvertToMarkdown(url, selector)
-    .then(async markdown => {
-      await saveMarkdownToFile(markdown, `wir${articleStr}.md`);
-    })
-    .catch(err => {
-      console.error('Error:', err);
-    });
+  let articles: number[] = [];
+  for (let i = 95; i <= 97; i++) {
+    articles.push(i)
+  }
+
+  articles = [98];
+
+  for (let article of articles) {
+    const articleStr = article.toString();
+    const url = generateUrl(BASE_WIR, `-${articleStr}/`);
+
+    const mdArticle = await fetchAndConvertToMarkdown(url, selector);
+    await saveMarkdownToFile(mdArticle, `wir${articleStr}.md`);
+
+    const res = await sendToClaude(mdArticle);
+    const resTxt = (res['content'][0] as Anth.TextBlock).text;
+
+    await saveMarkdownToFile(resTxt, `report-${articleStr}.md`);
+  }
 }
+
+(async () => {
+  await main();
+})();
