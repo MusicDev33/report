@@ -73,5 +73,6 @@ const dsSemiAnalysis: DataSource = {
 }
 
 export const Sources: Record<string, DataSource> = {
-
+  'semiengineering': dsSemiEng,
+  'semianalysis': dsSemiAnalysis,
 }
