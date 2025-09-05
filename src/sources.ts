@@ -2,6 +2,7 @@ import { JSDOM } from 'jsdom';
 import TurndownService from 'turndown';
 
 interface DataSource {
+  name: string
   baseUrl: string;
   postCheck: () => string;
   htmlToMarkdown: (txt: string) => string;
@@ -9,6 +10,7 @@ interface DataSource {
 }
 
 const dsSemiEng: DataSource = {
+  name: 'SemiEngineering',
   baseUrl: 'https://semiengineering.com/chip-industry-week-in-review-',
   postCheck: () => {
     // Use this function to check for new posts
@@ -59,6 +61,7 @@ const dsSemiEng: DataSource = {
 }
 
 const dsSemiAnalysis: DataSource = {
+  name: 'SemiAnalysis',
   baseUrl: 'https://semianalysis.com/',
   postCheck: () => {
     // Placeholder: implement logic to check for new analysis posts

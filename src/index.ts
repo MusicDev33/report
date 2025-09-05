@@ -1,23 +1,20 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import https from 'https';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-import Anth from '@anthropic-ai/sdk';
-
 import { countTokens } from '@anthropic-ai/tokenizer';
 
 import { Sources } from './sources';
+import { Calls } from './bot';
 
-import dotenv from 'dotenv';
-dotenv.config();
+import { sendMsgToUser } from './telegram';
 
-const claude = new Anth({
-  apiKey: process.env.ANTH_KEY
-});
-
-// Might add DeepSeek and ChatGPT later. Depends on how cheap Claude batch processing ends up being
-const MODELS = {
-  claude: 'claude-sonnet-4-20250514'
+const TELEGRAM_USER = process.env.TELEGRAM_USER_ID;
+if (!TELEGRAM_USER) {
+  process.exit(1)
 }
 
 const fetchHtml = (url: string): Promise<string> => {
@@ -49,33 +46,10 @@ async function saveMarkdownToFile(markdown: string, filename: string) {
   console.log(`  - Tokens: ${countTokens(markdown)}`);
 }
 
-const sendToClaude = async (txt: string) => {
-  const msg = await claude.messages.create({
-    model: MODELS['claude'],
-    max_tokens: 5000,
-    temperature: 0.7,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: `I'm a trader with a focus on geopolitics and global supply chains. Give me an investment report (make the report in Markdown please) based on this article:\n${txt}`
-          }
-        ]
-      }
-    ]
-  });
-
-  return msg;
-}
-
 const main = async () => {
-  let articles: number[] = [98];
+  let articles: number[] = [100];
 
   let source = Sources['semiengineering'];
-
-  articles = [98];
 
   for (let article of articles) {
     const articleStr = article.toString();
@@ -85,13 +59,18 @@ const main = async () => {
     const mdArticle = source.htmlToMarkdown(articleHtml);
     await saveMarkdownToFile(mdArticle, `wir${articleStr}.md`);
 
-    const res = await sendToClaude(mdArticle);
-    const resTxt = (res['content'][0] as Anth.TextBlock).text;
+    const resTxt = await Calls['claude'](mdArticle);
 
     await saveMarkdownToFile(resTxt, `report-${articleStr}.md`);
+    await sendMsgToUser(TELEGRAM_USER, `*${source.name}*\nReport ${article.toString()} compiled\\!`);
   }
+}
+
+const test = async () => {
+  await sendMsgToUser(TELEGRAM_USER, '*SemiEngineering*\n\nReport 101 compiled\\!');
 }
 
 (async () => {
   await main();
+  // await test();
 })();
